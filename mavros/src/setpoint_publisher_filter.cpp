@@ -9,6 +9,7 @@
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/SetMode.h>
 
+#include <string>
 #include <mutex>
 #include <cmath>
 
@@ -208,8 +209,6 @@ int main(int argc, char **argv)
 
 	ros::Duration(5).sleep();
 
-	wp_file = fopen("/home/umich-aero-2020/catkin_mavros_ws/waypoints.txt","r");
-
 	ROS_INFO("Setpoint publisher online!\n");
 
 	ros::NodeHandle nh;
@@ -230,6 +229,15 @@ int main(int argc, char **argv)
 
 	bool ok5 = ros::param::get("~alpha_filt", alpha_filt) ;
 	if (!ok5){alpha_filt = 0.005f;}
+
+	std::string wp_str;
+	bool ok6 = ros::param::get("~wp_str", wp_str) ;
+	if (!ok6)
+	{
+		wp_file = fopen("/home/umich-aero-2020/catkin_mavros_ws/waypoints.txt","r");
+	}else{
+		wp_file = fopen(wp_str.c_str(),"r");
+	}
 
 	ROS_INFO("WP Radius: %f\n", wp_radius);
 	ROS_INFO("WP Wait Time: %f\n", wp_wait_time);

@@ -1,0 +1,1 @@
+rosrun mavros print_local_pose
