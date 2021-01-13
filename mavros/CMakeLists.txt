@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   std_srvs
+  tf
   tf2_eigen
   tf2_ros
   trajectory_msgs
@@ -165,6 +166,61 @@ add_executable(gcs_bridge
   src/gcs_bridge.cpp
 )
 target_link_libraries(gcs_bridge
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(mocap_pose_publisher
+  src/mocap_pose_publisher.cpp
+)
+add_dependencies(mocap_pose_publisher
+  mavros
+)
+target_link_libraries(mocap_pose_publisher
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(fake_sp_pub
+  src/fake_sp_pub.cpp
+)
+add_dependencies(fake_sp_pub
+  mavros
+)
+target_link_libraries(fake_sp_pub
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(setpoint_publisher
+  src/setpoint_publisher.cpp
+)
+add_dependencies(setpoint_publisher
+  mavros
+)
+target_link_libraries(setpoint_publisher
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(setpoint_publisher_filter
+  src/setpoint_publisher_filter.cpp
+)
+add_dependencies(setpoint_publisher_filter
+  mavros
+)
+target_link_libraries(setpoint_publisher_filter
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(print_local_pose
+  src/print_local_pose.cpp
+)
+add_dependencies(print_local_pose
+  mavros
+)
+target_link_libraries(print_local_pose
   mavros
   ${catkin_LIBRARIES}
 )
