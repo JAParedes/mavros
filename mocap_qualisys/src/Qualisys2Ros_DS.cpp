@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
     ros::init(argc, argv, "Qualisys2Ros");
     //tf::TransformBroadcaster publisher;
 	ros::NodeHandle nh;
-	ros::Publisher mocap_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/mavros/vision_pose/pose", 10);
+	//ros::Publisher mocap_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/mavros/vision_pose/pose", 10);
+	ros::Publisher mocap_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/base_mocap", 10);
 
     // Defining a protocol that connects to the Qualisys
     CRTProtocol poRTProtocol;
@@ -117,6 +118,7 @@ int main(int argc, char* argv[]) {
 								pose.pose.orientation.y = -qtemp.y();
 								pose.pose.orientation.z = -qtemp.z();
 								pose.pose.orientation.w = qtemp.w();
+
 
 								mocap_pub.publish(pose);
 								++count;

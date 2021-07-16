@@ -29,6 +29,8 @@ float eps_filt = 1.2f;
 float wn_filt = 1.0f;
 float alpha_filt = 0.005f;
 
+float sp_rate = 0.1f;
+
 const float m_pi = 3.14159265358979323846f;
 const float deg2rad = m_pi/180.0f;
 
@@ -230,9 +232,12 @@ int main(int argc, char **argv)
 	bool ok5 = ros::param::get("~alpha_filt", alpha_filt) ;
 	if (!ok5){alpha_filt = 0.005f;}
 
+	bool ok6 = ros::param::get("~sp_rate", sp_rate) ;
+	if (!ok6){sp_rate = 0.1f;}
+
 	std::string wp_str;
-	bool ok6 = ros::param::get("~wp_str", wp_str) ;
-	if (!ok6)
+	bool ok7 = ros::param::get("~wp_str", wp_str) ;
+	if (!ok7)
 	{
 		wp_file = fopen("/home/umich-aero-2020/catkin_mavros_ws/waypoints.txt","r");
 	}else{
@@ -244,6 +249,7 @@ int main(int argc, char **argv)
 	ROS_INFO("Filter eps: %f\n", eps_filt);
 	ROS_INFO("Filter wn: %f\n", wn_filt);
 	ROS_INFO("Filter alpha: %f\n", alpha_filt);
+	ROS_INFO("Setpoint rate: %f sec\n", sp_rate);
 
 	sp_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/mavros/setpoint_position/local", 10);
 
@@ -264,7 +270,7 @@ int main(int argc, char **argv)
         rate.sleep();
     }
 	
-	ros::Timer timer = nh.createTimer(ros::Duration(0.05), callbackPostSetpoints);
+	ros::Timer timer = nh.createTimer(ros::Duration(sp_rate), callbackPostSetpoints);
 	
 	ros::NodeHandle nh_p;
 	ros::CallbackQueue callback_queue_p;

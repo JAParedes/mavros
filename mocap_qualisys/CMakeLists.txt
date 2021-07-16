@@ -71,6 +71,17 @@ target_link_libraries(Qualisys2ROS
   ${catkin_LIBRARIES}
 )
 
+add_executable(Qualisys2ROS_DS
+  src/Qualisys2Ros_DS.cpp
+)
+add_dependencies(Qualisys2ROS_DS
+  mocap_qualisys_driver
+)
+target_link_libraries(Qualisys2ROS_DS
+  mocap_qualisys_driver
+  ${catkin_LIBRARIES}
+)
+
 
 else()
   message(ERROR " MacOS is unsupported! mocap_qualisys will not be built!")
