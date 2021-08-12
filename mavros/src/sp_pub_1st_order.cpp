@@ -27,9 +27,6 @@ float wp_wait_time = 2.0f;
 
 float K_filt = 1.5f;
 
-float max_vel_xyz_filt = 2.0f;
-float max_vel_yaw_filt = 30.0f;
-
 float sp_rate = 0.05f;
 
 const float m_pi = 3.14159265358979323846f;
@@ -47,23 +44,16 @@ class WP_Filter {
 		float numDT;
 		float denDT;
 		float dT;
-		float maxVel;
 	public:
-		WP_Filter(float init_val, float K_f, float sp_pub_rate, float maxVelMag){
+		WP_Filter(float init_val, float K_f, float sp_pub_rate){
 			yk1 = init_val;
 			float eKdT = std::exp(-K_f);
 			denDT = -eKdT;
 			numDT = 1.0f - eKdT;
 			dT = sp_pub_rate;
-			maxVel = maxVelMag;
 		}
 		float run_filt(float u){
 			float yk = numDT*u - denDT*yk1;
-			float delta_yk = yk - yk1;
-			if (std::fabs(delta_yk) > maxVel*dT){
-				float v_sgn = (delta_yk > 0.0f) ? 1.0f : ((delta_yk < 0.0f) ? -1.0f : 0.0f);
-				yk = yk1 + v_sgn*maxVel*dT;
-			}
 			yk1 = yk;
 			return yk;
 		}
@@ -147,10 +137,10 @@ void callbackPostSetpoints(const ros::TimerEvent& event)
 	static float spp2_y = 0.0f;
 	static float spp2_z = 0.0f;
 	static float spp2_yaw = 0.0f;
-	static WP_Filter filt_x(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_y(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_z(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_yaw(0.0f, K_filt, sp_rate, max_vel_yaw_filt);
+	static WP_Filter filt_x(0.0f, K_filt, sp_rate);
+	static WP_Filter filt_y(0.0f, K_filt, sp_rate);
+	static WP_Filter filt_z(0.0f, K_filt, sp_rate);
+	static WP_Filter filt_yaw(0.0f, K_filt, sp_rate);
 	
 	if (count == 0)
 	{
@@ -206,16 +196,10 @@ int main(int argc, char **argv)
 
 	bool ok4 = ros::param::get("~sp_rate", sp_rate) ;
 	if (!ok4){sp_rate = 0.05f;}
-	
-	bool ok5 = ros::param::get("~max_vel_xyz_filt", max_vel_xyz_filt) ;
-	if (!ok5){max_vel_xyz_filt = 2.0f;}
-	
-	bool ok6 = ros::param::get("~max_vel_yaw_filt", max_vel_yaw_filt) ;
-	if (!ok6){max_vel_yaw_filt = 30.0f;}
 
 	std::string wp_str;
-	bool ok7 = ros::param::get("~wp_str", wp_str) ;
-	if (!ok7)
+	bool ok5 = ros::param::get("~wp_str", wp_str) ;
+	if (!ok5)
 	{
 		wp_file = fopen("/home/umich-aero-2020/catkin_mavros_ws/waypoints.txt","r");
 	}else{
@@ -226,8 +210,6 @@ int main(int argc, char **argv)
 	ROS_INFO("WP Wait Time: %f\n", wp_wait_time);
 	ROS_INFO("Filter K gain: %f\n", K_filt);
 	ROS_INFO("Setpoint rate: %f sec\n", sp_rate);
-	ROS_INFO("Max Vel. XYZ: %f m/sec\n", max_vel_xyz_filt);
-	ROS_INFO("Max Vel. Yaw: %f degrees/sec\n", max_vel_yaw_filt);
 
 	sp_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/mavros/setpoint_position/local", 10);
 

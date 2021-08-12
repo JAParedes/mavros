@@ -25,10 +25,11 @@ float sp_yaw = 0.0f;
 float wp_radius = 0.25f;
 float wp_wait_time = 2.0f;
 
-float K_filt = 1.5f;
+float vel_xyz_max = 2.0f;
+float acc_xyz_max = 0.5f;
 
-float max_vel_xyz_filt = 2.0f;
-float max_vel_yaw_filt = 30.0f;
+float vel_yaw_max = 30.0f;
+float acc_yaw_max = 10.0f;
 
 float sp_rate = 0.05f;
 
@@ -43,29 +44,96 @@ ros::ServiceClient mode_client;
 class WP_Filter {
 
 	private:
-		float yk1;
-		float numDT;
-		float denDT;
 		float dT;
-		float maxVel;
+		float t;
+		float x0;
+		float xr;
+		float d_xr;
+		float d_xT1;
+		float sigma;
+		float v_max;
+		float a_max;
+		float T1;
+		float T2;
+		float T3;
+		float v_max_bar;
+		float T1_bar;
+		bool trapzVel;
 	public:
-		WP_Filter(float init_val, float K_f, float sp_pub_rate, float maxVelMag){
-			yk1 = init_val;
-			float eKdT = std::exp(-K_f);
-			denDT = -eKdT;
-			numDT = 1.0f - eKdT;
+		WP_Filter(float sp_pub_rate, float x0_par, float xr_init, float v_max_par, float a_max_par){
 			dT = sp_pub_rate;
-			maxVel = maxVelMag;
+			t = 0.0f;
+			x0 =  x0_par;
+			xr = xr_init;
+			d_xr = xr - x0;
+			//sigma = sign(d_xr);
+			sigma = (d_xr > 0.0f) - (d_xr < 0.0f);
+			v_max = v_max_par;
+			a_max = a_max_par;
+			T1 = v_max / a_max;
+			T2 = T1 + std::fabs(d_xr)/v_max - v_max/a_max;
+			T3 = T1 + T2;
+			d_xT1 = 0.5*a_max*T1*T1;
+			v_max_bar = std::sqrt(std::fabs(d_xr)*a_max);
+			T1_bar = std::sqrt(std::fabs(d_xr)/a_max);
+			trapzVel = (std::fabs(d_xr) > 2.0f*std::fabs(d_xT1));
 		}
-		float run_filt(float u){
-			float yk = numDT*u - denDT*yk1;
-			float delta_yk = yk - yk1;
-			if (std::fabs(delta_yk) > maxVel*dT){
-				float v_sgn = (delta_yk > 0.0f) ? 1.0f : ((delta_yk < 0.0f) ? -1.0f : 0.0f);
-				yk = yk1 + v_sgn*maxVel*dT;
+		void newSP(float xr_n){
+			x0 = xr;
+			t = 0.0f;
+			xr = xr_n;
+			d_xr = xr - x0;
+			sigma = (d_xr > 0.0f) - (d_xr < 0.0f);
+			T2 = T1 + std::fabs(d_xr)/v_max - v_max/a_max;
+			T3 = T1 + T2;
+			v_max_bar = std::sqrt(std::fabs(d_xr)*a_max);
+			T1_bar = std::sqrt(std::fabs(d_xr)/a_max);
+			trapzVel = (std::fabs(d_xr) > 2.0f*std::fabs(d_xT1));
+
+		}
+		float run_filt(float xr_commanded){
+			if (std::fabs(xr_commanded - xr) > 0.01f)
+			{
+				this->newSP(xr_commanded);
 			}
-			yk1 = yk;
-			return yk;
+			t += dT;
+			float rk = 0.0f;
+			if (trapzVel)
+			{
+				if (t < T1)
+				{
+					rk = sigma*(0.5*a_max*t*t);
+				}
+				else if ((T1 <= t) && (t < T2))
+				{
+					rk = sigma*(0.5*a_max*T1*T1 + v_max*(t - T1));
+				}
+				else if ((T2 <= t) && (t < T3))
+				{
+					rk = sigma*(0.5*a_max*T1*T1 + v_max*(T2 - T1)
+					+ v_max*(t - T2) - 0.5*a_max*(t - T2)*(t - T2));
+				}
+				else
+				{
+					rk = d_xr;
+				}
+			}else{
+				if (t < T1_bar)
+				{
+					rk = sigma*(0.5*a_max*t*t);
+				}
+				else if ((T1_bar <= t) && (t <= 2*T1_bar))
+				{
+					rk = sigma*(0.5*a_max*T1_bar*T1_bar + v_max_bar*(t - T1_bar)
+					 - 0.5*a_max*(t - T1_bar)*(t - T1_bar));
+				}
+				else
+				{
+					rk = d_xr;
+				}
+			}
+			rk += x0;
+			return rk;
 		}
 };
 
@@ -142,15 +210,15 @@ void callbackPositionRead(const geometry_msgs::PoseStamped::ConstPtr& msg)
 void callbackPostSetpoints(const ros::TimerEvent& event)
 {
 	static geometry_msgs::PoseStamped pose;
-    	static int count = 0;
+    static int count = 0;
 	static float spp2_x = 0.0f;
 	static float spp2_y = 0.0f;
 	static float spp2_z = 0.0f;
 	static float spp2_yaw = 0.0f;
-	static WP_Filter filt_x(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_y(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_z(0.0f, K_filt, sp_rate, max_vel_xyz_filt);
-	static WP_Filter filt_yaw(0.0f, K_filt, sp_rate, max_vel_yaw_filt);
+	static WP_Filter filt_x(sp_rate, spp2_x, spp2_x, vel_xyz_max, acc_xyz_max);
+	static WP_Filter filt_y(sp_rate, spp2_y, spp2_y, vel_xyz_max, acc_xyz_max);
+	static WP_Filter filt_z(sp_rate, spp2_z, spp2_z, vel_xyz_max, acc_xyz_max);
+	static WP_Filter filt_yaw(sp_rate, spp2_yaw, spp2_yaw, vel_yaw_max, acc_yaw_max);
 	
 	if (count == 0)
 	{
@@ -201,21 +269,24 @@ int main(int argc, char **argv)
 	bool ok2 = ros::param::get("~wp_wt", wp_wait_time) ;
 	if (!ok2){wp_wait_time = 2.0f;}
 	
-	bool ok3 = ros::param::get("~K_filt", K_filt) ;
-	if (!ok3){K_filt = 1.5f;}
+	bool ok3 = ros::param::get("~vel_xyz_max", vel_xyz_max) ;
+	if (!ok3){vel_xyz_max = 2.0f;}
 
-	bool ok4 = ros::param::get("~sp_rate", sp_rate) ;
-	if (!ok4){sp_rate = 0.05f;}
-	
-	bool ok5 = ros::param::get("~max_vel_xyz_filt", max_vel_xyz_filt) ;
-	if (!ok5){max_vel_xyz_filt = 2.0f;}
-	
-	bool ok6 = ros::param::get("~max_vel_yaw_filt", max_vel_yaw_filt) ;
-	if (!ok6){max_vel_yaw_filt = 30.0f;}
+	bool ok4 = ros::param::get("~acc_xyz_max", acc_xyz_max) ;
+	if (!ok4){acc_xyz_max = 0.5f;}
+
+	bool ok5 = ros::param::get("~vel_yaw_max", vel_yaw_max) ;
+	if (!ok5){vel_yaw_max = 30.0f;}
+
+	bool ok6 = ros::param::get("~acc_yaw_max", acc_yaw_max) ;
+	if (!ok6){acc_yaw_max = 10.0f;}
+
+	bool ok7 = ros::param::get("~sp_rate", sp_rate) ;
+	if (!ok7){sp_rate = 0.05f;}
 
 	std::string wp_str;
-	bool ok7 = ros::param::get("~wp_str", wp_str) ;
-	if (!ok7)
+	bool ok8 = ros::param::get("~wp_str", wp_str) ;
+	if (!ok8)
 	{
 		wp_file = fopen("/home/umich-aero-2020/catkin_mavros_ws/waypoints.txt","r");
 	}else{
@@ -224,10 +295,11 @@ int main(int argc, char **argv)
 
 	ROS_INFO("WP Radius: %f\n", wp_radius);
 	ROS_INFO("WP Wait Time: %f\n", wp_wait_time);
-	ROS_INFO("Filter K gain: %f\n", K_filt);
+	ROS_INFO("Max vel XYZ: %f m/s\n", vel_xyz_max);
+	ROS_INFO("Max acc XYZ: %f m/s^2\n", acc_xyz_max);
+	ROS_INFO("Max vel yaw: %f deg/s\n", vel_yaw_max);
+	ROS_INFO("Max acc yaw: %f deg/s^2\n", acc_yaw_max);
 	ROS_INFO("Setpoint rate: %f sec\n", sp_rate);
-	ROS_INFO("Max Vel. XYZ: %f m/sec\n", max_vel_xyz_filt);
-	ROS_INFO("Max Vel. Yaw: %f degrees/sec\n", max_vel_yaw_filt);
 
 	sp_pub = nh.advertise<geometry_msgs::PoseStamped>("/uav100/mavros/setpoint_position/local", 10);
 
