@@ -280,6 +280,17 @@ target_link_libraries(sp_pub_max_acc_land
   ${catkin_LIBRARIES}
 )
 
+add_executable(sp_pub_max_acc_land_slow_start
+  src/sp_pub_max_acc_land_slow_start.cpp
+)
+add_dependencies(sp_pub_max_acc_land_slow_start
+  mavros
+)
+target_link_libraries(sp_pub_max_acc_land_slow_start
+  mavros
+  ${catkin_LIBRARIES}
+)
+
 add_executable(print_local_pose
   src/print_local_pose.cpp
 )
