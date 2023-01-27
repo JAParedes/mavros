@@ -214,6 +214,83 @@ target_link_libraries(setpoint_publisher_filter
   ${catkin_LIBRARIES}
 )
 
+add_executable(sp_pub_1st_order
+  src/sp_pub_1st_order.cpp
+)
+add_dependencies(sp_pub_1st_order
+  mavros
+)
+target_link_libraries(sp_pub_1st_order
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_2nd_order
+  src/sp_pub_2nd_order.cpp
+)
+add_dependencies(sp_pub_2nd_order
+  mavros
+)
+target_link_libraries(sp_pub_2nd_order
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_1st_order_vel_max
+  src/sp_pub_1st_order_vel_max.cpp
+)
+add_dependencies(sp_pub_1st_order_vel_max
+  mavros
+)
+target_link_libraries(sp_pub_1st_order_vel_max
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_2nd_order_vel_max
+  src/sp_pub_2nd_order_vel_max.cpp
+)
+add_dependencies(sp_pub_2nd_order_vel_max
+  mavros
+)
+target_link_libraries(sp_pub_2nd_order_vel_max
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_max_acc
+  src/sp_pub_max_acc.cpp
+)
+add_dependencies(sp_pub_max_acc
+  mavros
+)
+target_link_libraries(sp_pub_max_acc
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_max_acc_land
+  src/sp_pub_max_acc_land.cpp
+)
+add_dependencies(sp_pub_max_acc_land
+  mavros
+)
+target_link_libraries(sp_pub_max_acc_land
+  mavros
+  ${catkin_LIBRARIES}
+)
+
+add_executable(sp_pub_max_acc_land_slow_start
+  src/sp_pub_max_acc_land_slow_start.cpp
+)
+add_dependencies(sp_pub_max_acc_land_slow_start
+  mavros
+)
+target_link_libraries(sp_pub_max_acc_land_slow_start
+  mavros
+  ${catkin_LIBRARIES}
+)
+
 add_executable(print_local_pose
   src/print_local_pose.cpp
 )
