@@ -18,6 +18,43 @@ MAVLink extendable communication node for ROS.
 - 2020-01-01 version 1.0.0 released, please see [#1369][iss1369] for reasons and its purpose.
 
 
+Installation instructions for Ubuntu 20.04
+------------------------------------------
+
+First, install ROS Noetic by running
+```
+sudo apt-get update
+install mavros noetic
+sudo apt-get install ros-noetic-mavros ros-noetic-mavros-extras
+
+```
+Then, install catkin by running
+```
+sudo apt-get install python3-catkin-tools
+```
+In a directory of your choosing, create a catkin environment by running
+```
+catkin init
+catkin build
+```
+Clone this repository within the src directory that was just created by running
+Change branches to mavros-mocap-guidance by running
+```
+git checkout mavros-mocap-guidance
+```
+Next, within the mavros repository, run
+```
+sudo ./mavros/scripts/install_geographiclib_datasets.sh
+```
+Finally, to compile mavros, run
+```
+catkin build
+```
+Before running any of the scripts within the Utility Scripts, don't forget to source the setup file in the devel directory in your catkin environment by running
+```
+source ./devel/setup.bash
+```
+
 mavros package
 --------------
 
