@@ -1,5 +1,9 @@
 MAVROS
 ======
+
+**TO DO:** Finish documentation and code cleanup.
+
+
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/mavlink/mavros)](https://github.com/mavlink/mavros/releases)  [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mavlink/mavros?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 MAVLink extendable communication node for ROS.
